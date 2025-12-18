@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Puzzle Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .rules {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .rules h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .rules ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .game-area {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .board {
+            display: inline-block;
+            border: 3px solid #333;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .row {
+            display: flex;
+        }
+
+        .cell {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .cell.white-square {
+            background-color: #f0d9b5;
+        }
+
+        .cell.black-square {
+            background-color: #b58863;
+        }
+
+        .piece {
+            font-size: 40px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .piece.white {
+            color: white;
+            text-shadow:
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000,
+                0 0 3px #000;
+        }
+
+        .piece.black {
+            color: #1a1a1a;
+        }
+
+        .piece.unknown {
+            color: #888;
+            opacity: 0.5;
+        }
+
+        .clues {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .clues h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .clue-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #ddd;
+            font-size: 0.9em;
+        }
+
+        .clue-item.satisfied {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .clue-item.unsatisfied {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .controls {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .legend {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .selected-color {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .color-button {
+            margin: 0 10px;
+            padding: 10px 20px;
+        }
+
+        .color-button.active {
+            background: #764ba2;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chess Color Puzzle</h1>
+
+        <div class="rules">
+            <h3>How to Play:</h3>
+            <ul>
+                <li>Click pieces to toggle between Black/White/Unknown</li>
+                <li>Attacks pass through pieces</li>
+                <li>White Pawns attack up, Black Pawns attack down</li>
+                <li>Satisfy all the clues to win!</li>
+            </ul>
+        </div>
+
+        <div class="game-area">
+            <div id="board" class="board"></div>
+            <div class="clues">
+                <h3>Clues:</h3>
+                <div id="clues-list"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="checkSolution()">Check Solution</button>
+            <button onclick="resetBoard()">Reset</button>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="legend">
+            <strong>Piece Legend:</strong> K=King, Q=Queen, R=Rook, B=Bishop, N=Knight, P=Pawn
+        </div>
+    </div>
+
+    <script>
+        const SETUP = [
+            ['B', 'Q', 'N', 'R'],
+            ['N', 'R', 'P', 'N'],
+            ['B', 'B', 'K', 'R'],
+            ['R', 'P', 'R', 'P'],
+            ['B', 'Q', 'K', 'N']
+        ];
+
+        const CLUES = [
+            { desc: "Every White piece is attacked by at least 1 White piece", check: checkEveryWhiteAttacked },
+            { desc: "White Kings attack White pieces a total of 1 times", type: "white-king", count: 1 },
+            { desc: "White Rooks attack White pieces a total of 7 times", type: "white-rook", count: 7 },
+            { desc: "White Bishops attack White pieces a total of 1 times", type: "white-bishop", count: 1 },
+            { desc: "White Knights attack White pieces a total of 5 times", type: "white-knight", count: 5 },
+            { desc: "Black Knights attack White pieces a total of 10 times", type: "black-knight", count: 10 },
+            { desc: "White Pawns attack White pieces a total of 5 times", type: "white-pawn", count: 5 }
+        ];
+
+        const PIECE_SYMBOLS = {
+            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙'
+        };
+
+        let board = [];
+
+        function initBoard() {
+            board = SETUP.map((row, r) =>
+                row.map((piece, c) => ({
+                    type: piece,
+                    color: null, // null, 'white', or 'black'
+                    row: r,
+                    col: c
+                }))
+            );
+            renderBoard();
+            updateClues();
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            board.forEach((row, r) => {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'row';
+
+                row.forEach((cell, c) => {
+                    const cellEl = document.createElement('div');
+                    const isWhiteSquare = (r + c) % 2 === 0;
+                    cellEl.className = `cell ${isWhiteSquare ? 'white-square' : 'black-square'}`;
+
+                    const pieceEl = document.createElement('div');
+                    pieceEl.className = `piece ${cell.color || 'unknown'}`;
+                    pieceEl.textContent = PIECE_SYMBOLS[cell.type];
+
+                    cellEl.appendChild(pieceEl);
+                    cellEl.onclick = () => togglePiece(r, c);
+                    rowEl.appendChild(cellEl);
+                });
+
+                boardEl.appendChild(rowEl);
+            });
+        }
+
+        function togglePiece(row, col) {
+            const piece = board[row][col];
+            if (piece.color === null) {
+                piece.color = 'white';
+            } else if (piece.color === 'white') {
+                piece.color = 'black';
+            } else {
+                piece.color = null;
+            }
+            renderBoard();
+            updateClues();
+        }
+
+        function getAttackedSquares(piece, row, col) {
+            const attacks = [];
+
+            if (piece.type === 'K') {
+                // King attacks all adjacent squares
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        if (dr === 0 && dc === 0) continue;
+                        const nr = row + dr;
+                        const nc = col + dc;
+                        if (nr >= 0 && nr < 5 && nc >= 0 && nc < 4) {
+                            attacks.push([nr, nc]);
+                        }
+                    }
+                }
+            } else if (piece.type === 'Q') {
+                // Queen attacks like rook + bishop
+                attacks.push(...getLineAttacks(row, col, [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]));
+            } else if (piece.type === 'R') {
+                // Rook attacks horizontally and vertically
+                attacks.push(...getLineAttacks(row, col, [[1,0],[-1,0],[0,1],[0,-1]]));
+            } else if (piece.type === 'B') {
+                // Bishop attacks diagonally
+                attacks.push(...getLineAttacks(row, col, [[1,1],[1,-1],[-1,1],[-1,-1]]));
+            } else if (piece.type === 'N') {
+                // Knight attacks in L-shape
+                const moves = [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]];
+                moves.forEach(([dr, dc]) => {
+                    const nr = row + dr;
+                    const nc = col + dc;
+                    if (nr >= 0 && nr < 5 && nc >= 0 && nc < 4) {
+                        attacks.push([nr, nc]);
+                    }
+                });
+            } else if (piece.type === 'P') {
+                // Pawn attacks diagonally (white up, black down)
+                const direction = piece.color === 'white' ? -1 : 1;
+                [[-1, 1]].forEach(([_, dc]) => {
+                    const nr = row + direction;
+                    const nc1 = col + dc;
+                    const nc2 = col - dc;
+                    if (nr >= 0 && nr < 5) {
+                        if (nc1 >= 0 && nc1 < 4) attacks.push([nr, nc1]);
+                        if (nc2 >= 0 && nc2 < 4) attacks.push([nr, nc2]);
+                    }
+                });
+            }
+
+            return attacks;
+        }
+
+        function getLineAttacks(row, col, directions) {
+            const attacks = [];
+            directions.forEach(([dr, dc]) => {
+                let nr = row + dr;
+                let nc = col + dc;
+                // Attacks pass through pieces
+                while (nr >= 0 && nr < 5 && nc >= 0 && nc < 4) {
+                    attacks.push([nr, nc]);
+                    nr += dr;
+                    nc += dc;
+                }
+            });
+            return attacks;
+        }
+
+        function countAttacks(attackerType, attackerColor, targetColor) {
+            let count = 0;
+            board.forEach((row, r) => {
+                row.forEach((piece, c) => {
+                    if (piece.type === attackerType && piece.color === attackerColor) {
+                        const attacks = getAttackedSquares(piece, r, c);
+                        attacks.forEach(([ar, ac]) => {
+                            if (board[ar][ac].color === targetColor) {
+                                count++;
+                            }
+                        });
+                    }
+                });
+            });
+            return count;
+        }
+
+        function checkEveryWhiteAttacked() {
+            let allAttacked = true;
+            board.forEach((row, r) => {
+                row.forEach((piece, c) => {
+                    if (piece.color === 'white') {
+                        let isAttacked = false;
+                        board.forEach((row2, r2) => {
+                            row2.forEach((attacker, c2) => {
+                                if (attacker.color === 'white' && !(r2 === r && c2 === c)) {
+                                    const attacks = getAttackedSquares(attacker, r2, c2);
+                                    if (attacks.some(([ar, ac]) => ar === r && ac === c)) {
+                                        isAttacked = true;
+                                    }
+                                }
+                            });
+                        });
+                        if (!isAttacked) {
+                            allAttacked = false;
+                        }
+                    }
+                });
+            });
+            return allAttacked;
+        }
+
+        function checkClue(clue) {
+            if (clue.check) {
+                return clue.check();
+            }
+
+            const [color, type] = clue.type.split('-');
+            const actualCount = countAttacks(type.toUpperCase(), color, 'white');
+            return actualCount === clue.count;
+        }
+
+        function updateClues() {
+            const cluesEl = document.getElementById('clues-list');
+            cluesEl.innerHTML = '';
+
+            CLUES.forEach(clue => {
+                const clueEl = document.createElement('div');
+                clueEl.className = 'clue-item';
+
+                const satisfied = checkClue(clue);
+                if (hasAllColors()) {
+                    clueEl.classList.add(satisfied ? 'satisfied' : 'unsatisfied');
+                }
+
+                clueEl.textContent = clue.desc;
+                cluesEl.appendChild(clueEl);
+            });
+        }
+
+        function hasAllColors() {
+            return board.every(row => row.every(cell => cell.color !== null));
+        }
+
+        function checkSolution() {
+            const messageEl = document.getElementById('message');
+
+            if (!hasAllColors()) {
+                messageEl.className = 'message error';
+                messageEl.textContent = 'Please assign colors to all pieces first!';
+                return;
+            }
+
+            const allSatisfied = CLUES.every(checkClue);
+
+            if (allSatisfied) {
+                messageEl.className = 'message success';
+                messageEl.textContent = 'Congratulations! You solved the puzzle!';
+            } else {
+                messageEl.className = 'message error';
+                messageEl.textContent = 'Not quite right. Check the clues and try again!';
+            }
+
+            updateClues();
+        }
+
+        function resetBoard() {
+            initBoard();
+            document.getElementById('message').style.display = 'none';
+        }
+
+        initBoard();
+    </script>
+</body>
+</html>
